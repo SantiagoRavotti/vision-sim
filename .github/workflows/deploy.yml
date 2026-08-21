@@ -1,4 +1,9 @@
-name: Deploy to GitHub Pages
+# Production hosting moved to Vercel, which deploys from the domain root and is
+# wired directly to this repository. This workflow is kept only so the legacy
+# https://santiagoravotti.github.io/vision-sim/ URL keeps working until Vercel
+# is confirmed good. Pages needs a subdirectory base path, hence VITE_BASE.
+# Once Pages is retired, delete this file.
+name: Deploy to GitHub Pages (legacy)
 
 on:
   push:
@@ -32,6 +37,9 @@ jobs:
       - run: npm ci
 
       - run: npm run build
+        env:
+          # GitHub Pages serves from /<repo>/; Vercel serves from /.
+          VITE_BASE: /vision-sim/
 
       - uses: actions/configure-pages@v5
 

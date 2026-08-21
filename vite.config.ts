@@ -4,11 +4,31 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 
 /**
- * GitHub Pages serves a project repo from https://<user>.github.io/<repo>/,
- * so every asset URL, the service-worker scope and the manifest start_url
- * must be prefixed with this. Change it in exactly one place.
+ * The path the app is served from. Every asset URL, the service-worker scope,
+ * the manifest start_url/scope/id and navigateFallback derive from this single
+ * value, so moving hosts is a one-line change.
+ *
+ * Vercel (production) serves from the domain ROOT, hence the '/' default.
+ *
+ * GitHub Pages serves a project repo from https://<user>.github.io/<repo>/ and
+ * therefore needs a subdirectory prefix. It stays overridable via VITE_BASE so
+ * the old Pages URL keeps working while the Vercel migration is validated,
+ * rather than being broken before its replacement is confirmed. Once Pages is
+ * retired, this can collapse to a plain '/'.
  */
-const BASE = '/vision-sim/'
+const BASE = process.env.VITE_BASE || '/'
+
+// Fail loudly rather than shipping a build with broken asset URLs. Git Bash on
+// Windows rewrites env values that look like POSIX paths, turning a VITE_BASE
+// of '/vision-sim/' into 'C:/Program Files/Git/vision-sim/' - which builds
+// "successfully" and then 404s on every asset. Linux CI runners are unaffected,
+// but the failure is silent enough to be worth catching here.
+if (!BASE.startsWith('/') || !BASE.endsWith('/') || BASE.includes(':')) {
+  throw new Error(
+    `VITE_BASE must be an absolute path with a leading and trailing slash, got ${JSON.stringify(BASE)}. ` +
+      'On Git Bash for Windows, set it via PowerShell or prefix the command with MSYS_NO_PATHCONV=1.',
+  )
+}
 
 /**
  * HTTPS is only needed for LAN/phone testing: getUserMedia() requires a secure

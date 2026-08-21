@@ -36,7 +36,7 @@ npm install
 npm run dev
 ```
 
-Then open <http://localhost:5173/vision-sim/>.
+Then open <http://localhost:5173/>.
 
 `localhost` counts as a secure context even over plain HTTP, so the camera
 works without any certificate. Handy for UI work; useless for judging the
@@ -49,8 +49,8 @@ npm run dev:phone
 ```
 
 This adds a self-signed HTTPS certificate and binds to all interfaces. It
-prints a `Network:` URL such as `https://10.30.0.76:5173/vision-sim/` — open
-that on the phone.
+prints a `Network:` URL such as `https://10.30.0.76:5173/` — open that on the
+phone.
 
 **`getUserMedia` requires a secure context, and `http://192.168.x.x` is not
 one.** A plain `vite --host` will silently refuse the camera on the phone,
@@ -67,9 +67,15 @@ Firewall must allow Node to accept inbound connections on the dev port
 
 ### Deployed
 
-Pushing to `main` builds and publishes to GitHub Pages via
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). No certificate
-warnings, and it works over mobile data.
+Production is hosted on **Vercel**, connected directly to this GitHub
+repository:
+
+```
+push to main  ->  Vercel builds  ->  https://<project>.vercel.app/
+```
+
+No certificate warnings, and it works over mobile data. Config lives in
+[`vercel.json`](vercel.json); Vercel serves from the domain **root**.
 
 ## Build
 
@@ -78,18 +84,34 @@ npm run build     # tsc -b && vite build  ->  dist/
 npm run preview   # serve dist/ locally
 ```
 
-## GitHub Pages notes
+## Base path
 
-A project repo is served from `https://<user>.github.io/<repo>/`, so the base
-path has to be threaded through everything. It is defined **once**, as `BASE`
-in [`vite.config.ts`](vite.config.ts), and flows to:
+The path the app is served from is defined **once**, as `BASE` in
+[`vite.config.ts`](vite.config.ts), and everything derives from it:
 
 - asset URLs (Vite's `base`)
-- the PWA manifest's `start_url` and `scope`
-- the service worker registration scope and its `navigateFallback`
-- `public/.nojekyll`, so GitHub does not run Jekyll over the build output
+- the manifest's `start_url`, `scope` and `id`
+- the service worker registration path and scope
+- Workbox's `navigateFallback`
 
-If the repo is ever renamed, change `BASE` and nothing else.
+It defaults to `/` for Vercel. It can be overridden with the `VITE_BASE`
+environment variable for a host that serves from a subdirectory — which is what
+the legacy GitHub Pages workflow does (`VITE_BASE=/vision-sim/`), since a
+project repo is served from `https://<user>.github.io/<repo>/`. `BASE` is
+validated at build time, because a malformed value produces a build that
+succeeds and then 404s on every asset.
+
+### Retiring GitHub Pages
+
+Pages is still deployed by
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) so the old URL
+keeps working during the migration. To retire it: delete that workflow, delete
+`public/.nojekyll` (Pages-only), turn Pages off in the repo settings, and
+optionally collapse `BASE` to a literal `'/'`.
+
+Note that the Pages and Vercel URLs are **different origins**, so an installed
+PWA from one is a separate app from the other — including its own camera
+permission and its own home-screen icon.
 
 ## Installing it (PWA)
 
