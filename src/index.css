@@ -1,0 +1,349 @@
+:root {
+  --bg: #000;
+  --fg: #fff;
+  --panel: rgba(12, 12, 14, 0.72);
+  --stroke: rgba(255, 255, 255, 0.16);
+  --accent: #6ee7ff;
+  color-scheme: dark;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  /* A camera viewfinder should never rubber-band or let a long-press pop a
+     text-selection callout. */
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+  /* dvh tracks the collapsing Safari toolbar; vh is the fallback. */
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* The <video> must remain in the layout tree for iOS to keep decoding, so it is
+   made invisible rather than display:none. */
+.hidden-video {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------------------------------------------------------------- top bar */
+
+.topbar {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pill {
+  appearance: none;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  backdrop-filter: blur(12px);
+  color: var(--fg);
+  border-radius: 999px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.pill-mono {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  opacity: 0.75;
+}
+
+/* ------------------------------------------------------------ bottom panel */
+
+.bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px 18px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0));
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.presets {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.presets::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  appearance: none;
+  flex: 0 0 auto;
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.chip-on {
+  background: var(--fg);
+  color: #000;
+  border-color: var(--fg);
+}
+
+.readout {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.readout-value {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  /* Fixed width so the number does not jitter while dragging. */
+  min-width: 5.5ch;
+}
+
+.readout-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+
+.slider {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 34px;
+  background: transparent;
+  /* Keeps a horizontal drag from being stolen by the page scroller. */
+  touch-action: pan-y;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.slider::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -11px;
+  border-radius: 50%;
+  background: var(--fg);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+.slider::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: var(--fg);
+}
+
+.scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  opacity: 0.45;
+  font-variant-numeric: tabular-nums;
+  margin-top: -6px;
+}
+
+.hold {
+  appearance: none;
+  width: 100%;
+  height: 58px;
+  border-radius: 16px;
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  color: var(--fg);
+  font-size: 16px;
+  font-weight: 650;
+  transition: background 0.12s ease, transform 0.12s ease;
+  touch-action: none;
+}
+
+.hold-on {
+  background: var(--fg);
+  color: #000;
+  transform: scale(0.985);
+}
+
+.hold:disabled {
+  opacity: 0.35;
+}
+
+/* ------------------------------------------------------------ overlay cards */
+
+.gate {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.gate-card {
+  max-width: 380px;
+  border: 1px solid var(--stroke);
+  border-radius: 20px;
+  background: #101013;
+  padding: 24px;
+}
+
+.gate-card h1 {
+  margin: 0 0 10px;
+  font-size: 21px;
+}
+
+.gate-card p {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.45;
+  opacity: 0.85;
+}
+
+.gate-card .fine {
+  font-size: 12.5px;
+  opacity: 0.55;
+}
+
+.cta {
+  appearance: none;
+  width: 100%;
+  height: 48px;
+  margin-top: 6px;
+  border: none;
+  border-radius: 12px;
+  background: var(--fg);
+  color: #000;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+/* ------------------------------------------------------------- debug panel */
+
+.debug {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 54px);
+  left: 12px;
+  max-width: 300px;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  background: var(--panel);
+  backdrop-filter: blur(12px);
+  padding: 10px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+}
+
+.debug-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.debug-head button {
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--fg);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.debug table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.debug td {
+  padding: 1px 0;
+  vertical-align: top;
+}
+
+.debug td:first-child {
+  opacity: 0.55;
+  padding-right: 10px;
+  white-space: nowrap;
+}
+
+.debug td:last-child {
+  text-align: right;
+  color: var(--accent);
+}
+
+.debug hr {
+  border: none;
+  border-top: 1px solid var(--stroke);
+  margin: 5px 0;
+}
