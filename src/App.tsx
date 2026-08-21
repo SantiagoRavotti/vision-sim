@@ -7,6 +7,8 @@ import type { EyeRx } from './optics/prescription'
 import { DiopterSlider, formatDiopters } from './components/DiopterSlider'
 import { HoldToCompare } from './components/HoldToCompare'
 import { DebugPanel } from './components/DebugPanel'
+import { InstallSheet, InstallGlyph } from './components/InstallSheet'
+import { useInstallState, useOnline } from './pwa/useInstallState'
 
 const EMPTY_STATS: RendererStats = {
   fps: 0,
@@ -25,11 +27,14 @@ export default function App() {
   const rendererRef = useRef<VisionRenderer | null>(null)
 
   const camera = useCamera(videoRef)
+  const { isStandalone, route: installRoute, promptInstall } = useInstallState()
+  const online = useOnline()
 
   const [myopiaD, setMyopiaD] = useState(2.0)
   const [holding, setHolding] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
+  const [showInstall, setShowInstall] = useState(false)
   const [stats, setStats] = useState<RendererStats>(EMPTY_STATS)
   const [glError, setGlError] = useState<string | null>(null)
   const [cal] = useState<Calibration>(DEFAULT_CALIBRATION)
@@ -98,6 +103,16 @@ export default function App() {
     if (camera.status === 'ready') rendererRef.current?.setVideo(videoRef.current)
   }, [camera.status])
 
+  const onInstallTap = useCallback(async () => {
+    // Chromium: go straight to the native flow, no intermediate sheet.
+    // iOS: there is no programmatic install, so explain the Share sheet.
+    if (installRoute === 'native') {
+      await promptInstall()
+    } else {
+      setShowInstall(true)
+    }
+  }, [installRoute, promptInstall])
+
   const retry = useCallback(() => {
     setGlError(null)
     void camera.start()
@@ -111,7 +126,7 @@ export default function App() {
     camera.status === 'error'
 
   return (
-    <div className="app">
+    <div className={`app ${isStandalone ? 'app-standalone' : ''}`}>
       {/* Must stay in the layout tree and must be inline + muted, or iOS
           Safari takes playback into its native fullscreen player. */}
       <video
@@ -134,14 +149,28 @@ export default function App() {
         >
           {stats.fps} fps
         </button>
-        <button
-          type="button"
-          className="pill"
-          onClick={() => setShowInfo(true)}
-          aria-label="About this simulation"
-        >
-          i
-        </button>
+        <div className="topbar-right">
+          {!online && <span className="pill pill-warn">Offline</span>}
+          {installRoute !== 'none' && (
+            <button
+              type="button"
+              className="pill pill-install"
+              onClick={onInstallTap}
+              aria-label="Install Vision Sim"
+            >
+              <InstallGlyph />
+              Install
+            </button>
+          )}
+          <button
+            type="button"
+            className="pill"
+            onClick={() => setShowInfo(true)}
+            aria-label="About this simulation"
+          >
+            i
+          </button>
+        </div>
       </div>
 
       {showDebug && (
@@ -183,6 +212,10 @@ export default function App() {
             )}
           </div>
         </div>
+      )}
+
+      {showInstall && installRoute !== 'none' && installRoute !== 'native' && (
+        <InstallSheet route={installRoute} onClose={() => setShowInstall(false)} />
       )}
 
       {showInfo && (
